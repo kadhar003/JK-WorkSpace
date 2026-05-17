@@ -29,11 +29,10 @@ RUN apk add --no-cache \
     sqlite-dev \
     postgresql-dev \
     icu-dev \
-    gettext-dev \
+    libmagic-dev \
     && docker-php-ext-install -j$(nproc) \
     bcmath \
     ctype \
-    curl \
     fileinfo \
     json \
     mbstring \
@@ -44,9 +43,9 @@ RUN apk add --no-cache \
     opcache \
     zip \
     intl \
-    gettext \
     && docker-php-ext-configure opcache --enable-opcache \
-    && rm -rf /var/cache/apk/*
+    && apk del --no-cache $PHPIZE_DEPS \
+    && rm -rf /var/cache/apk/* /tmp/*
 
 # Install Composer
 COPY --from=composer:2.7 /usr/bin/composer /usr/bin/composer

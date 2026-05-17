@@ -1,0 +1,90 @@
+services:
+  - type: web
+    name: jk-web
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerfileTarget: webserver
+    port: 80
+    healthCheckPath: /
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_KEY
+        sync: false
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        fromService:
+          type: mysql
+          name: jk-db
+          property: host
+      - key: DB_PORT
+        value: 3306
+      - key: DB_DATABASE
+        value: jk_workspace
+      - key: DB_USERNAME
+        value: root
+      - key: DB_PASSWORD
+        sync: false
+      - key: REDIS_HOST
+        fromService:
+          type: redis
+          name: jk-redis
+          property: host
+      - key: REDIS_PORT
+        value: 6379
+
+  - type: background_worker
+    name: jk-queue
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerfileTarget: app
+    startCommand: php artisan queue:work --sleep=3 --tries=3
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_KEY
+        sync: false
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        fromService:
+          type: mysql
+          name: jk-db
+          property: host
+      - key: DB_PORT
+        value: 3306
+      - key: DB_DATABASE
+        value: jk_workspace
+      - key: DB_USERNAME
+        value: root
+      - key: DB_PASSWORD
+        sync: false
+      - key: REDIS_HOST
+        fromService:
+          type: redis
+          name: jk-redis
+          property: host
+      - key: REDIS_PORT
+        value: 6379
+
+  - type: mysql
+    name: jk-db
+    version: 8.0
+    ipAddress: 127.0.0.1
+    port: 3306
+    databaseName: jk_workspace
+    user: root
+    envVars:
+      - key: MYSQL_ROOT_PASSWORD
+        generateValue: true
+
+  - type: redis
+    name: jk-redis
+    version: 7
+    ipAddress: 127.0.0.1
+    port: 6379
