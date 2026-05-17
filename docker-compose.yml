@@ -6,6 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: webserver
+    container_name: jk-webserver
     ports:
       - "${DOCKER_PORT:-80}:80"
       - "${DOCKER_PORT_SSL:-443}:443"
@@ -20,24 +21,13 @@ services:
       - ./public:/var/www/public:ro
       - ./storage:/var/www/storage
     restart: unless-stopped
-    healthcheck:
-      test:
-        - CMD
-        - wget
-        - --quiet
-        - --tries=1
-        - --spider
-        - http://localhost/
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
 
   app:
     build:
       context: .
       dockerfile: Dockerfile
       target: app
+    container_name: jk-app
     expose:
       - "9000"
     depends_on:
@@ -70,17 +60,10 @@ services:
       - ./storage:/var/www/storage
       - ./bootstrap/cache:/var/www/bootstrap/cache
     restart: unless-stopped
-    healthcheck:
-      test:
-        - CMD
-        - php
-        - -v
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   db:
     image: mysql:8.0-alpine
+    container_name: jk-db
     expose:
       - "3306"
     networks:
@@ -94,20 +77,11 @@ services:
       - db-data:/var/lib/mysql
       - ./database/database.sql:/docker-entrypoint-initdb.d/init.sql:ro
     restart: unless-stopped
-    healthcheck:
-      test:
-        - CMD
-        - mysqladmin
-        - ping
-        - -h
-        - localhost
-      interval: 10s
-      timeout: 5s
-      retries: 5
     command: --default-authentication-plugin=mysql_native_password
 
   redis:
     image: redis:7-alpine
+    container_name: jk-redis
     expose:
       - "6379"
     networks:
@@ -115,14 +89,6 @@ services:
     volumes:
       - redis-data:/data
     restart: unless-stopped
-    healthcheck:
-      test:
-        - CMD
-        - redis-cli
-        - ping
-      interval: 10s
-      timeout: 5s
-      retries: 5
     command: redis-server --appendonly yes
 
   queue:
@@ -130,6 +96,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: app
+    container_name: jk-queue
     depends_on:
       - db
       - redis
@@ -153,14 +120,6 @@ services:
       - ./storage:/var/www/storage
     restart: unless-stopped
     command: php artisan queue:work --sleep=3 --tries=3
-    healthcheck:
-      test:
-        - CMD
-        - php
-        - -v
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
 networks:
   jk-network:
